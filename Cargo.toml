@@ -7,3 +7,10 @@ edition = "2018"
 ureq = "2.1.1"
 dirs = "3.0.2"
 anyhow = "1.0.42"
+protobuf = "2.24.1"
+
+[build-dependencies]
+protobuf-codegen-pure= { version = "2.24.1", optional = true }
+
+[features]
+proto-compile = ["protobuf-codegen-pure"]

@@ -2,6 +2,8 @@ use std::fs;
 use std::fs::File;
 use std::io::copy;
 use std::path::PathBuf;
+mod proto;
+pub use proto::sentencepiece_model;
 
 /// Download a file target to a cache location
 pub fn download_file_to_cache(src: &str, target: &str) -> Result<PathBuf, ureq::Error> {
