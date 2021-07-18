@@ -12,5 +12,6 @@ fn main() -> anyhow::Result<()> {
     let tokenizer = NaiveBpeTokenizer::new(&model_file)?;
     let input_text = "Hello, world!";
     let output = tokenizer.tokenize(input_text);
+    println!("{:?}", output);
     Ok(())
 }

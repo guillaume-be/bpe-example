@@ -11,13 +11,13 @@ pub type MergesVocab = HashMap<String, i64>;
 
 #[derive(Debug, Copy, Clone, Eq, PartialEq)]
 pub struct Symbol {
-    start_byte: usize,
-    end_byte: usize,
+    pub start_byte: usize,
+    pub end_byte: usize,
 }
 
 impl Ord for Symbol {
     fn cmp(&self, other: &Self) -> Ordering {
-        other.start_byte.cmp(&self.start_byte)
+        self.start_byte.cmp(&other.start_byte)
     }
 }
 
@@ -90,5 +90,5 @@ pub trait BpeTokenizer {
         });
     }
 
-    fn tokenize(&self, input_text: &str) -> Vec<&str>;
+    fn tokenize<'a>(&self, input_text: &'a str) -> Vec<&'a str>;
 }
