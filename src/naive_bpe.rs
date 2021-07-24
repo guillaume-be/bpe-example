@@ -39,15 +39,17 @@ impl BpeTokenizer for NaiveBpeTokenizer {
     }
 
     fn tokenize<'a>(&self, input_text: &'a str) -> Vec<&'a str> {
-        // ToDo: handle offsets after replacing by \u{2581}
-        let text = input_text.replace(|c: char| c.is_whitespace(), "\u{2581}");
+        let (text, byte_mapping) = self.pre_process_text(input_text, '\u{2581}');
+
         let mut symbols = Self::pre_populate_symbols(text.as_str());
         while let Some(best_pair) = self.find_best_merge(&symbols, text.as_str()) {
             self.merge_symbols(&mut symbols, &best_pair.0, &best_pair.1);
         }
         let mut output = Vec::new();
         for symbol in symbols {
-            output.push(&input_text[symbol.start_byte..symbol.end_byte]);
+            output.push(
+                &input_text[byte_mapping[&symbol.start_byte]..byte_mapping[&symbol.end_byte]],
+            );
         }
         output
     }

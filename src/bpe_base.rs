@@ -63,6 +63,37 @@ pub trait BpeTokenizer {
         Ok(values)
     }
 
+    fn pre_process_text(
+        &self,
+        input_text: &str,
+        whitespace_token: char,
+    ) -> (String, HashMap<usize, usize>) {
+        let mut byte_mapping: HashMap<usize, usize> = HashMap::new();
+        let whitespace_token_len = whitespace_token.len_utf8();
+        let mut pre_processed_text = Vec::new();
+        let mut offset = 0;
+
+        if !input_text.starts_with(whitespace_token) {
+            pre_processed_text.push(whitespace_token);
+            byte_mapping.insert(0, 0);
+            offset += whitespace_token_len;
+        };
+
+        for (character_start, character) in input_text.char_indices() {
+            byte_mapping.insert(character_start + offset, character_start);
+            if character.is_whitespace() {
+                pre_processed_text.push(whitespace_token);
+                offset += whitespace_token_len - 1;
+            } else {
+                pre_processed_text.push(character);
+            }
+        }
+        let pre_processed_text = pre_processed_text.iter().collect::<String>();
+        byte_mapping.insert(pre_processed_text.len(), input_text.len());
+
+        (pre_processed_text, byte_mapping)
+    }
+
     fn pre_populate_symbols(input_text: &str) -> BTreeSet<Symbol> {
         let mut symbols = BTreeSet::new();
         for (character_start, character) in input_text.char_indices() {
