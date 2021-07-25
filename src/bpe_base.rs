@@ -29,9 +29,9 @@ impl PartialOrd for Symbol {
 
 #[derive(Debug, Copy, Clone, Eq, PartialEq)]
 pub struct SymbolPair {
-    left: Symbol,
-    right: Symbol,
-    score: i64,
+    pub left: Symbol,
+    pub right: Symbol,
+    pub score: i64,
 }
 
 impl Ord for SymbolPair {
@@ -113,12 +113,19 @@ pub trait BpeTokenizer {
             .map(|score| *score)
     }
 
-    fn merge_symbols(&self, symbols: &mut BTreeSet<Symbol>, symbol_1: &Symbol, symbol_2: &Symbol) {
+    fn merge_symbols<'a>(
+        &self,
+        symbols: &'a mut BTreeSet<Symbol>,
+        symbol_1: &Symbol,
+        symbol_2: &Symbol,
+    ) -> Symbol {
         symbols.remove(symbol_2);
-        symbols.replace(Symbol {
+        let new_symbol = Symbol {
             start_byte: symbol_1.start_byte,
             end_byte: symbol_2.end_byte,
-        });
+        };
+        symbols.replace(new_symbol);
+        new_symbol
     }
 
     fn tokenize<'a>(&self, input_text: &'a str) -> Vec<&'a str>;
