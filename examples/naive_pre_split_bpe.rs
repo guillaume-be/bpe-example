@@ -1,4 +1,4 @@
-use bpe_example::{download_file_to_cache, BpeTokenizer, NaiveBpeTokenizer};
+use bpe_example::{download_file_to_cache, BpeTokenizer, NaivePreSplitBpeTokenizer};
 use std::fs::File;
 use std::io;
 use std::io::BufRead;
@@ -21,7 +21,7 @@ fn main() -> anyhow::Result<()> {
         }
     }
 
-    let tokenizer = NaiveBpeTokenizer::new(&model_file)?;
+    let tokenizer = NaivePreSplitBpeTokenizer::new(&model_file)?;
     let output = tokenizer.tokenize(hamlet.as_str());
     println!("{:?}", output);
     Ok(())
