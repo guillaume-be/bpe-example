@@ -28,7 +28,7 @@ impl NaivePreSplitBpeTokenizer {
                     None => None,
                 },
             )
-            .max_by_key(|(_, rank)| *rank)
+            .min_by_key(|(_, rank)| *rank)
             .map(|(pair, _)| (*pair.0, *pair.1))
     }
 
