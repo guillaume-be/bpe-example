@@ -1,7 +1,7 @@
 use crate::bpe_base::{BpeTokenizer, MergesVocab, Symbol, SymbolPair};
 use itertools::Itertools;
 use protobuf::ProtobufError;
-use std::collections::BinaryHeap;
+use std::collections::{BTreeSet, BinaryHeap};
 use std::path::Path;
 
 pub struct PriorityQueueBpeTokenizer {
@@ -40,13 +40,12 @@ impl BpeTokenizer for PriorityQueueBpeTokenizer {
     fn tokenize<'a>(&self, input_text: &'a str) -> Vec<&'a str> {
         let (text, byte_mapping) = self.pre_process_text(input_text, '\u{2581}');
 
-        let mut symbols = Self::pre_populate_symbols(text.as_str());
+        let mut symbols: BTreeSet<Symbol> = Self::pre_populate_symbols(text.as_str());
         let mut agenda: BinaryHeap<SymbolPair> = BinaryHeap::new();
 
         for (left_symbol, right_symbol) in symbols.iter().tuple_windows::<(&Symbol, &Symbol)>() {
             self.maybe_add_pair(left_symbol, right_symbol, text.as_str(), &mut agenda);
         }
-
         while let Some(symbol_pair) = agenda.pop() {
             let left_symbol = symbols.get(&symbol_pair.left).cloned();
             let right_symbol = symbols.get(&symbol_pair.right).cloned();
@@ -56,11 +55,10 @@ impl BpeTokenizer for PriorityQueueBpeTokenizer {
             } else {
                 let new_symbol =
                     self.merge_symbols(&mut symbols, &left_symbol.unwrap(), &right_symbol.unwrap());
-
-                if let Some(next) = symbols.range(..new_symbol).next() {
+                if let Some(next) = symbols.range(new_symbol..).nth(1) {
                     self.maybe_add_pair(&new_symbol, next, text.as_str(), &mut agenda);
                 }
-                if let Some(prev) = symbols.range(new_symbol..).next_back() {
+                if let Some(prev) = symbols.range(..new_symbol).next_back() {
                     self.maybe_add_pair(prev, &new_symbol, text.as_str(), &mut agenda);
                 }
             }

@@ -17,7 +17,10 @@ fn main() -> anyhow::Result<()> {
     let mut hamlet = String::new();
     for line in io::BufReader::new(file).lines().take(sample_size) {
         if let Ok(line) = line {
-            hamlet.push_str(&line);
+            if !line.is_empty() {
+                hamlet.push_str(&line.trim_start());
+                hamlet.push(' ');
+            }
         }
     }
 

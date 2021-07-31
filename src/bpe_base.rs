@@ -17,7 +17,9 @@ pub struct Symbol {
 
 impl Ord for Symbol {
     fn cmp(&self, other: &Self) -> Ordering {
-        self.start_byte.cmp(&other.start_byte)
+        self.start_byte
+            .cmp(&other.start_byte)
+            .then_with(|| self.end_byte.cmp(&other.end_byte))
     }
 }
 
@@ -119,12 +121,13 @@ pub trait BpeTokenizer {
         symbol_1: &Symbol,
         symbol_2: &Symbol,
     ) -> Symbol {
+        symbols.remove(symbol_1);
         symbols.remove(symbol_2);
         let new_symbol = Symbol {
             start_byte: symbol_1.start_byte,
             end_byte: symbol_2.end_byte,
         };
-        symbols.replace(new_symbol);
+        symbols.insert(new_symbol);
         new_symbol
     }
 
