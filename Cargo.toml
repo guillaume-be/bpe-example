@@ -3,12 +3,28 @@ name = "bpe-example"
 version = "0.1.0"
 edition = "2018"
 
+[[bench]]
+name = "benchmark_priority_queue"
+harness = false
+
+[[bench]]
+name = "benchmark_naive_word_split"
+harness = false
+
+[[bench]]
+name = "benchmark_naive"
+harness = false
+
+[profile.bench]
+opt-level = 3
+
 [dependencies]
 ureq = "2.1.1"
 dirs = "3.0.2"
 anyhow = "1.0.42"
 protobuf = "2.24.1"
 itertools = "0.10.1"
+criterion = "0.3.5"
 
 [build-dependencies]
 protobuf-codegen-pure= { version = "2.24.1", optional = true }
