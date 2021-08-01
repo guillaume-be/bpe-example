@@ -59,7 +59,7 @@ fn bench_tokenization_100(c: &mut Criterion) {
         "https://huggingface.co/facebook/m2m100_418M/resolve/main/sentencepiece.bpe.model",
     );
 
-    c.bench_function("Tokenization 10 lines", |b| {
+    c.bench_function("Tokenization 100 lines", |b| {
         b.iter_custom(|iters| black_box(tokenize(iters, &tokenizer, corpus.as_str())))
     });
 }
@@ -72,7 +72,7 @@ fn bench_tokenization_1000(c: &mut Criterion) {
         "https://huggingface.co/facebook/m2m100_418M/resolve/main/sentencepiece.bpe.model",
     );
 
-    c.bench_function("Tokenization 10 lines", |b| {
+    c.bench_function("Tokenization 1000 lines", |b| {
         b.iter_custom(|iters| black_box(tokenize(iters, &tokenizer, corpus.as_str())))
     });
 }
