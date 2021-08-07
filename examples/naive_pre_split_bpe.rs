@@ -1,7 +1,6 @@
-use bpe_example::{download_file_to_cache, BpeTokenizer, NaivePreSplitBpeTokenizer};
-use std::fs::File;
-use std::io;
-use std::io::BufRead;
+use bpe_example::{
+    download_file_to_cache, get_file_header, BpeTokenizer, NaivePreSplitBpeTokenizer,
+};
 
 fn main() -> anyhow::Result<()> {
     let hamlet_path = download_file_to_cache(
@@ -13,16 +12,7 @@ fn main() -> anyhow::Result<()> {
     )?;
 
     let sample_size = 10;
-    let file = File::open(hamlet_path)?;
-    let mut hamlet = String::new();
-    for line in io::BufReader::new(file).lines().take(sample_size) {
-        if let Ok(line) = line {
-            if !line.is_empty() {
-                hamlet.push_str(&line.trim_start());
-                hamlet.push(' ');
-            }
-        }
-    }
+    let hamlet = get_file_header(&hamlet_path, sample_size)?;
 
     let tokenizer = NaivePreSplitBpeTokenizer::new(&model_file)?;
     let output = tokenizer.tokenize(hamlet.as_str());

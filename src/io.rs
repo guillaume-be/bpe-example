@@ -1,7 +1,9 @@
 use std::fs;
 use std::fs::File;
+use std::io;
 use std::io::copy;
-use std::path::PathBuf;
+use std::io::BufRead;
+use std::path::{Path, PathBuf};
 
 /// Download a file target to a cache location
 pub fn download_file_to_cache(src: &str, target: &str) -> Result<PathBuf, ureq::Error> {
@@ -15,4 +17,20 @@ pub fn download_file_to_cache(src: &str, target: &str) -> Result<PathBuf, ureq::
         copy(&mut response, &mut dest).unwrap();
     }
     Ok(home)
+}
+
+pub fn get_file_header(file_path: &Path, header_length: usize) -> io::Result<String> {
+    let file = File::open(file_path)?;
+    let mut output = String::new();
+    for line in io::BufReader::new(file)
+        .lines()
+        .take(header_length)
+        .flatten()
+    {
+        if !line.is_empty() {
+            output.push_str(line.trim_start());
+            output.push(' ');
+        }
+    }
+    Ok(output)
 }

@@ -1,11 +1,10 @@
 #[macro_use]
 extern crate criterion;
 
-use bpe_example::{download_file_to_cache, BpeTokenizer, PriorityQueueBpeTokenizer};
+use bpe_example::{
+    download_file_to_cache, get_file_header, BpeTokenizer, PriorityQueueBpeTokenizer,
+};
 use criterion::{black_box, Criterion};
-use std::fs::File;
-use std::io;
-use std::io::BufRead;
 use std::time::{Duration, Instant};
 
 fn get_tokenizer(model_url: &str) -> PriorityQueueBpeTokenizer {
@@ -15,17 +14,7 @@ fn get_tokenizer(model_url: &str) -> PriorityQueueBpeTokenizer {
 
 fn get_corpus(corpus_url: &str, n_lines: usize) -> String {
     let corpus_file = download_file_to_cache(corpus_url, "corpus.txt").unwrap();
-    let mut corpus = String::new();
-    let file = File::open(corpus_file).unwrap();
-    for line in io::BufReader::new(file).lines().take(n_lines) {
-        if let Ok(line) = line {
-            if !line.is_empty() {
-                corpus.push_str(&line.trim_start());
-                corpus.push(' ');
-            }
-        }
-    }
-    corpus
+    get_file_header(&corpus_file, n_lines).unwrap()
 }
 
 fn tokenize(iters: u64, tokenizer: &PriorityQueueBpeTokenizer, corpus: &str) -> Duration {

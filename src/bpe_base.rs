@@ -111,8 +111,7 @@ pub trait BpeTokenizer {
 
     fn get_merge_score(&self, symbol_1: &Symbol, symbol_2: &Symbol, text: &str) -> Option<i64> {
         self.get_merges_vocab()
-            .get(&text[symbol_1.start_byte..symbol_2.end_byte])
-            .map(|score| *score)
+            .get(&text[symbol_1.start_byte..symbol_2.end_byte]).copied()
     }
 
     fn merge_symbols<'a>(

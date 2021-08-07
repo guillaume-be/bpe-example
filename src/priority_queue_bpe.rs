@@ -50,11 +50,8 @@ impl BpeTokenizer for PriorityQueueBpeTokenizer {
             let left_symbol = symbols.get(&symbol_pair.left).cloned();
             let right_symbol = symbols.get(&symbol_pair.right).cloned();
 
-            if left_symbol.is_none() | right_symbol.is_none() {
-                continue;
-            } else {
-                let new_symbol =
-                    self.merge_symbols(&mut symbols, &left_symbol.unwrap(), &right_symbol.unwrap());
+            if let (Some(left_symbol), Some(right_symbol)) = (left_symbol, right_symbol) {
+                let new_symbol = self.merge_symbols(&mut symbols, &left_symbol, &right_symbol);
                 if let Some(next) = symbols.range(new_symbol..).nth(1) {
                     self.maybe_add_pair(&new_symbol, next, text.as_str(), &mut agenda);
                 }

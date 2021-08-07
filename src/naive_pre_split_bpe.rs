@@ -22,12 +22,10 @@ impl NaivePreSplitBpeTokenizer {
         symbols
             .iter()
             .tuple_windows::<(&'a Symbol, &'a Symbol)>()
-            .filter_map(
-                |pair| match self.get_merge_score(pair.0, pair.1, input_text) {
-                    Some(rank) => Some((pair, rank)),
-                    None => None,
-                },
-            )
+            .filter_map(|pair| {
+                self.get_merge_score(pair.0, pair.1, input_text)
+                    .map(|rank| (pair, rank))
+            })
             .min_by_key(|(_, rank)| *rank)
             .map(|(pair, _)| (*pair.0, *pair.1))
     }
