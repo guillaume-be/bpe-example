@@ -3,7 +3,6 @@ use itertools::Itertools;
 use protobuf::ProtobufError;
 use std::path::Path;
 
-#[derive(Debug)]
 pub struct SymbolArray {
     pub symbols: Vec<Symbol>,
 }

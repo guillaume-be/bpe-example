@@ -2,11 +2,8 @@ use crate::bpe_base::{BpeTokenizer, MergesVocab};
 use protobuf::ProtobufError;
 use std::cmp::Ordering;
 use std::collections::BinaryHeap;
+use std::ops::Index;
 use std::path::Path;
-
-pub struct PriorityQueueBpeLLTokenizer {
-    merges_vocab: MergesVocab,
-}
 
 #[derive(Debug, Copy, Clone, Eq, PartialEq)]
 pub struct SymbolNode {
@@ -40,6 +37,88 @@ impl PartialOrd for SymbolNodePair {
     }
 }
 
+pub struct SymbolList {
+    symbols: Vec<Option<SymbolNode>>,
+}
+
+impl Index<usize> for SymbolList {
+    type Output = Option<SymbolNode>;
+
+    fn index(&self, index: usize) -> &Option<SymbolNode> {
+        self.symbols.index(index)
+    }
+}
+
+impl IntoIterator for SymbolList {
+    type Item = Option<SymbolNode>;
+    type IntoIter = <Vec<Option<SymbolNode>> as IntoIterator>::IntoIter;
+
+    fn into_iter(self) -> Self::IntoIter {
+        self.symbols.into_iter()
+    }
+}
+
+impl SymbolList {
+    pub fn from_text(input_text: &str) -> Self {
+        let mut symbols = Vec::with_capacity(input_text.len());
+        for (index, (character_start, character)) in input_text.char_indices().enumerate() {
+            let next = if index == input_text.len() {
+                -1
+            } else {
+                (index + 1) as isize
+            };
+            symbols.push(Some(SymbolNode {
+                start_byte: character_start,
+                end_byte: character_start + character.len_utf8(),
+                prev: index as isize - 1,
+                next,
+                size: 1,
+            }));
+        }
+        Self { symbols }
+    }
+
+    pub fn len(&self) -> usize {
+        self.symbols.len()
+    }
+
+    pub fn merge_symbols(
+        &mut self,
+        symbol_1_index: usize,
+        symbol_2_index: usize,
+        size_validation: usize,
+    ) -> Option<SymbolNode> {
+        if let (Some(left_symbol), Some(right_symbol)) =
+            (self[symbol_1_index], self[symbol_2_index])
+        {
+            if left_symbol.size + right_symbol.size != size_validation {
+                return None;
+            }
+            if right_symbol.next != -1 {
+                if let Some(next_next) = self.symbols.get_mut(right_symbol.next as usize).unwrap() {
+                    next_next.prev = symbol_1_index as isize;
+                }
+            }
+            let new_symbol = SymbolNode {
+                start_byte: left_symbol.start_byte,
+                end_byte: right_symbol.end_byte,
+                prev: left_symbol.prev,
+                next: right_symbol.next,
+                size: left_symbol.size + right_symbol.size,
+            };
+            self.symbols[symbol_2_index] = None;
+            self.symbols[symbol_1_index] = Some(new_symbol);
+            Some(new_symbol)
+        } else {
+            None
+        }
+    }
+}
+
+pub struct PriorityQueueBpeLLTokenizer {
+    merges_vocab: MergesVocab,
+}
+
 impl PriorityQueueBpeLLTokenizer {
     pub fn new(merges_path: &Path) -> Result<Self, ProtobufError> {
         let merges_vocab = Self::read_proto(merges_path)?;
@@ -51,7 +130,7 @@ impl PriorityQueueBpeLLTokenizer {
         left_symbol_index: isize,
         right_symbol_index: isize,
         input_text: &str,
-        symbols: &Vec<Option<SymbolNode>>,
+        symbols: &SymbolList,
         agenda: &mut BinaryHeap<SymbolNodePair>,
     ) {
         if left_symbol_index != -1 && right_symbol_index != -1 {
@@ -71,58 +150,6 @@ impl PriorityQueueBpeLLTokenizer {
             }
         }
     }
-
-    fn pre_populate_symbols(input_text: &str) -> Vec<Option<SymbolNode>> {
-        let mut symbols = Vec::with_capacity(input_text.len());
-        for (index, (character_start, character)) in input_text.char_indices().enumerate() {
-            let next = if index == input_text.len() {
-                -1
-            } else {
-                (index + 1) as isize
-            };
-            symbols.push(Some(SymbolNode {
-                start_byte: character_start,
-                end_byte: character_start + character.len_utf8(),
-                prev: index as isize - 1,
-                next,
-                size: 1,
-            }));
-        }
-        symbols
-    }
-
-    fn merge_symbols_from_indices(
-        &self,
-        symbols: &mut Vec<Option<SymbolNode>>,
-        symbol_1_index: usize,
-        symbol_2_index: usize,
-        size_validation: usize,
-    ) -> Option<SymbolNode> {
-        if let (Some(left_symbol), Some(right_symbol)) =
-            (symbols[symbol_1_index], symbols[symbol_2_index])
-        {
-            if left_symbol.size + right_symbol.size != size_validation {
-                return None;
-            }
-            if right_symbol.next != -1 {
-                if let Some(next_next) = symbols.get_mut(right_symbol.next as usize).unwrap() {
-                    next_next.prev = symbol_1_index as isize;
-                }
-            }
-            let new_symbol = SymbolNode {
-                start_byte: left_symbol.start_byte,
-                end_byte: right_symbol.end_byte,
-                prev: left_symbol.prev,
-                next: right_symbol.next,
-                size: left_symbol.size + right_symbol.size,
-            };
-            symbols[symbol_2_index] = None;
-            symbols[symbol_1_index] = Some(new_symbol);
-            Some(new_symbol)
-        } else {
-            None
-        }
-    }
 }
 
 impl BpeTokenizer for PriorityQueueBpeLLTokenizer {
@@ -133,7 +160,7 @@ impl BpeTokenizer for PriorityQueueBpeLLTokenizer {
     fn tokenize<'a>(&self, input_text: &'a str) -> Vec<&'a str> {
         let (text, byte_mapping) = self.pre_process_text(input_text, '\u{2581}');
 
-        let mut symbols: Vec<Option<SymbolNode>> = Self::pre_populate_symbols(text.as_str());
+        let mut symbols = SymbolList::from_text(text.as_str());
         let mut agenda: BinaryHeap<SymbolNodePair> = BinaryHeap::new();
 
         for symbol_index in 1..symbols.len() {
@@ -150,8 +177,7 @@ impl BpeTokenizer for PriorityQueueBpeLLTokenizer {
             let left_symbol_index = symbol_pair.left;
             let right_symbol_index = symbol_pair.right;
             if left_symbol_index != -1 && right_symbol_index != -1 {
-                let new_symbol = self.merge_symbols_from_indices(
-                    &mut symbols,
+                let new_symbol = symbols.merge_symbols(
                     left_symbol_index as usize,
                     right_symbol_index as usize,
                     symbol_pair.pair_size,
