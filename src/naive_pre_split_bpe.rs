@@ -1,7 +1,6 @@
-use crate::bpe_base::{BpeTokenizer, MergesVocab, Symbol};
-use itertools::Itertools;
+use crate::bpe_base::{BpeTokenizer, MergesVocab};
+use crate::naive_bpe::SymbolArray;
 use protobuf::ProtobufError;
-use std::collections::BTreeSet;
 use std::path::Path;
 
 pub struct NaivePreSplitBpeTokenizer {
@@ -12,22 +11,6 @@ impl NaivePreSplitBpeTokenizer {
     pub fn new(merges_path: &Path) -> Result<Self, ProtobufError> {
         let merges_vocab = Self::read_proto(merges_path)?;
         Ok(Self { merges_vocab })
-    }
-
-    fn find_best_merge<'a>(
-        &self,
-        symbols: &'a BTreeSet<Symbol>,
-        input_text: &str,
-    ) -> Option<(Symbol, Symbol)> {
-        symbols
-            .iter()
-            .tuple_windows::<(&'a Symbol, &'a Symbol)>()
-            .filter_map(|pair| {
-                self.get_merge_score(pair.0, pair.1, input_text)
-                    .map(|rank| (pair, rank))
-            })
-            .min_by_key(|(_, rank)| *rank)
-            .map(|(pair, _)| (*pair.0, *pair.1))
     }
 
     fn split_whitespace_punctuation<'a>(
@@ -73,11 +56,11 @@ impl BpeTokenizer for NaivePreSplitBpeTokenizer {
         let mut output = Vec::new();
         let mut offset = 0;
         for split_text in split_texts {
-            let mut symbols = Self::pre_populate_symbols(split_text);
-            while let Some(best_pair) = self.find_best_merge(&symbols, split_text) {
-                self.merge_symbols(&mut symbols, &best_pair.0, &best_pair.1);
+            let mut symbols = SymbolArray::from_text(split_text);
+            while let Some(best_pair_index) = symbols.find_best_merge(split_text, self) {
+                symbols.merge_symbols(best_pair_index);
             }
-            for symbol in symbols {
+            for symbol in symbols.symbols {
                 output.push(
                     &input_text[byte_mapping[&(offset + symbol.start_byte)]
                         ..byte_mapping[&(offset + symbol.end_byte)]],

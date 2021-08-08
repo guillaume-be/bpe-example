@@ -30,6 +30,33 @@ impl PriorityQueueBpeTokenizer {
             })
         }
     }
+
+    fn pre_populate_symbols(input_text: &str) -> BTreeSet<Symbol> {
+        let mut symbols = BTreeSet::new();
+        for (character_start, character) in input_text.char_indices() {
+            symbols.insert(Symbol {
+                start_byte: character_start,
+                end_byte: character_start + character.len_utf8(),
+            });
+        }
+        symbols
+    }
+
+    fn merge_symbols<'a>(
+        &self,
+        symbols: &'a mut BTreeSet<Symbol>,
+        symbol_1: &Symbol,
+        symbol_2: &Symbol,
+    ) -> Symbol {
+        symbols.remove(symbol_1);
+        symbols.remove(symbol_2);
+        let new_symbol = Symbol {
+            start_byte: symbol_1.start_byte,
+            end_byte: symbol_2.end_byte,
+        };
+        symbols.insert(new_symbol);
+        new_symbol
+    }
 }
 
 impl BpeTokenizer for PriorityQueueBpeTokenizer {

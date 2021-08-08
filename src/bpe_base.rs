@@ -1,7 +1,6 @@
 use crate::proto::sentencepiece_model::ModelProto;
 use protobuf::{Message, ProtobufError};
 use std::cmp::Ordering;
-use std::collections::BTreeSet;
 use std::collections::HashMap;
 use std::fs::File;
 use std::io::Read;
@@ -96,38 +95,12 @@ pub trait BpeTokenizer {
         (pre_processed_text, byte_mapping)
     }
 
-    fn pre_populate_symbols(input_text: &str) -> BTreeSet<Symbol> {
-        let mut symbols = BTreeSet::new();
-        for (character_start, character) in input_text.char_indices() {
-            symbols.insert(Symbol {
-                start_byte: character_start,
-                end_byte: character_start + character.len_utf8(),
-            });
-        }
-        symbols
-    }
-
     fn get_merges_vocab(&self) -> &MergesVocab;
 
     fn get_merge_score(&self, symbol_1: &Symbol, symbol_2: &Symbol, text: &str) -> Option<i64> {
         self.get_merges_vocab()
-            .get(&text[symbol_1.start_byte..symbol_2.end_byte]).copied()
-    }
-
-    fn merge_symbols<'a>(
-        &self,
-        symbols: &'a mut BTreeSet<Symbol>,
-        symbol_1: &Symbol,
-        symbol_2: &Symbol,
-    ) -> Symbol {
-        symbols.remove(symbol_1);
-        symbols.remove(symbol_2);
-        let new_symbol = Symbol {
-            start_byte: symbol_1.start_byte,
-            end_byte: symbol_2.end_byte,
-        };
-        symbols.insert(new_symbol);
-        new_symbol
+            .get(&text[symbol_1.start_byte..symbol_2.end_byte])
+            .copied()
     }
 
     fn tokenize<'a>(&self, input_text: &'a str) -> Vec<&'a str>;
