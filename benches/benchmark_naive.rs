@@ -25,6 +25,19 @@ fn tokenize(iters: u64, tokenizer: &NaiveBpeTokenizer, corpus: &str) -> Duration
     duration
 }
 
+fn bench_tokenization_1(c: &mut Criterion) {
+    let sample_size = 1;
+
+    let corpus = get_corpus("https://gist.githubusercontent.com/provpup/2fc41686eab7400b796b/raw/b575bd01a58494dfddc1d6429ef0167e709abf9b/hamlet.txt", sample_size);
+    let tokenizer = get_tokenizer(
+        "https://huggingface.co/facebook/m2m100_418M/resolve/main/sentencepiece.bpe.model",
+    );
+
+    c.bench_function("Tokenization 1 lines", |b| {
+        b.iter_custom(|iters| black_box(tokenize(iters, &tokenizer, corpus.as_str())))
+    });
+}
+
 fn bench_tokenization_10(c: &mut Criterion) {
     let sample_size = 10;
 
@@ -51,23 +64,23 @@ fn bench_tokenization_100(c: &mut Criterion) {
     });
 }
 
-// fn bench_tokenization_1000(c: &mut Criterion) {
-//     let sample_size = 1000;
-//
-//     let corpus = get_corpus("https://gist.githubusercontent.com/provpup/2fc41686eab7400b796b/raw/b575bd01a58494dfddc1d6429ef0167e709abf9b/hamlet.txt", sample_size);
-//     let tokenizer = get_tokenizer(
-//         "https://huggingface.co/facebook/m2m100_418M/resolve/main/sentencepiece.bpe.model",
-//     );
-//
-//     c.bench_function("Tokenization 1000 lines", |b| {
-//         b.iter_custom(|iters| black_box(tokenize(iters, &tokenizer, corpus.as_str())))
-//     });
-// }
+fn bench_tokenization_1000(c: &mut Criterion) {
+    let sample_size = 1000;
+
+    let corpus = get_corpus("https://gist.githubusercontent.com/provpup/2fc41686eab7400b796b/raw/b575bd01a58494dfddc1d6429ef0167e709abf9b/hamlet.txt", sample_size);
+    let tokenizer = get_tokenizer(
+        "https://huggingface.co/facebook/m2m100_418M/resolve/main/sentencepiece.bpe.model",
+    );
+
+    c.bench_function("Tokenization 1000 lines", |b| {
+        b.iter_custom(|iters| black_box(tokenize(iters, &tokenizer, corpus.as_str())))
+    });
+}
 
 criterion_group! {
 name = benches;
 config = Criterion::default();
-targets = bench_tokenization_10, bench_tokenization_100
+targets = bench_tokenization_1, bench_tokenization_10, bench_tokenization_100, bench_tokenization_1000
 }
 
 criterion_main!(benches);
