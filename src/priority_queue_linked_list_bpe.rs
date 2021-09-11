@@ -62,7 +62,7 @@ impl SymbolList {
     pub fn from_text(input_text: &str) -> Self {
         let mut symbols = Vec::with_capacity(input_text.len());
         for (index, (character_start, character)) in input_text.char_indices().enumerate() {
-            let next = if index == input_text.len() {
+            let next = if index == input_text.char_indices().count() {
                 -1
             } else {
                 (index + 1) as isize
